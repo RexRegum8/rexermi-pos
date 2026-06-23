@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { dbQuery } from '@/lib/db';
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
       totalMem = os.totalmem();
       freeMem = os.freemem();
       uptime = os.uptime();
-      platform = process.platform;
+      platform = process['platform'];
     }
     const usedMem = totalMem - freeMem;
 

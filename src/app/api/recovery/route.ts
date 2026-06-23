@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { restoreFromSafeLocation, initNewDatabaseSchema, reinitializeDatabase } from '@/lib/db';
-import Database from 'better-sqlite3';
-import path from 'path';
-import * as XLSX from 'xlsx';
 
-const dbPath = path.join(process.cwd(), 'src', 'data', 'database.sqlite');
+export const runtime = 'edge';
+
+let Database: any = null;
+let path: any = null;
+let XLSX: any = null;
+let dbPath = '';
+
+if (typeof EdgeRuntime !== 'string') {
+  const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+  Database = requireFunc('better-sqlite3');
+  path = requireFunc('path');
+  XLSX = requireFunc('xlsx');
+  dbPath = path.join(process['cwd'](), 'src', 'data', 'database.sqlite');
+}
+
 
 const RESTORABLE_TABLES = ['categories', 'products', 'users', 'coupons', 'orders', 'order_items', 'inventory_movements', 'settings'];
 
@@ -20,6 +31,13 @@ const CORRECT_MAP: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
+  if (typeof EdgeRuntime === 'string') {
+    return NextResponse.json(
+      { success: false, error: 'El panel de recuperación de base de datos local no está disponible en la nube.' },
+      { status: 501 }
+    );
+  }
+
   try {
     // Check if recovery mode is active
     if (!(globalThis as any).isDbRecoveryMode) {

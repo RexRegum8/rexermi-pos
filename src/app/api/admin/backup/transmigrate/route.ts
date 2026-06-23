@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminToken } from '@/lib/auth';
-import path from 'path';
-import fs from 'fs';
 import JSZip from 'jszip';
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const runtime = 'edge';
+
+let fs: any = null;
+let path: any = null;
+
+if (typeof EdgeRuntime !== 'string') {
+  const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+  fs = requireFunc('fs');
+  path = requireFunc('path');
+}
+
 
 const SETUP_BAT = `@echo off
 setlocal enabledelayedexpansion
@@ -115,8 +123,16 @@ export async function GET(req: Request) {
   const admin = await verifyAdminToken(req as any);
   if (!admin) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
+  if (typeof EdgeRuntime === 'string') {
+    return NextResponse.json(
+      { error: 'La transmigración de archivos locales no está soportada en entornos serverless (Cloudflare Pages).' },
+      { status: 501 }
+    );
+  }
+
   try {
-    const PROJECT_ROOT = process.cwd();
+    const PROJECT_ROOT = process['cwd']();
+
     // turbopackIgnore: true — dynamic path is intentional for runtime file access
     const DB_PATH = path.join(PROJECT_ROOT, 'src', 'data', 'database.sqlite');
 

@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { verifyAdminToken } from '@/lib/auth';
 
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
   const Database = requireFunc('better-sqlite3');
   const path = requireFunc('path');
   const XLSX = requireFunc('xlsx');
-  const dbPath = path.join(process.cwd(), 'src', 'data', 'database.sqlite');
+  const dbPath = path.join(process['cwd'](), 'src', 'data', 'database.sqlite');
 
   try {
     const formData = await req.formData();

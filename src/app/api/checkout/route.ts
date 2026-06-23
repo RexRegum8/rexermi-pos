@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import db, { dbQuery, dbBatch } from '@/lib/db';
 import { verifyCustomerToken } from '@/lib/auth';
@@ -278,7 +279,7 @@ export async function POST(req: NextRequest) {
         const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
         const fsLib = requireFunc('fs');
         const pathLib = requireFunc('path');
-        const receiptsDir = pathLib.join(process.cwd(), 'private', 'receipts');
+        const receiptsDir = pathLib.join(process['cwd'](), 'private', 'receipts');
         if (!fsLib.existsSync(receiptsDir)) fsLib.mkdirSync(receiptsDir, { recursive: true });
 
         const buffer = Buffer.from(await receiptFile.arrayBuffer());

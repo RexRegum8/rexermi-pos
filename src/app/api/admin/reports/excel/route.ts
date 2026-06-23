@@ -2,12 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbQuery } from '@/lib/db';
 import { getAdminSession } from '@/lib/auth';
 import { getSetting } from '@/lib/settings';
-import * as XLSX from 'xlsx';
+
+export const runtime = 'edge';
+
+let XLSX: any = null;
+
+if (typeof EdgeRuntime !== 'string') {
+  const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+  XLSX = requireFunc('xlsx');
+}
 
 export async function GET(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
+  if (typeof EdgeRuntime === 'string') {
+    return NextResponse.json(
+      { error: 'La generación de reportes en Excel no está soportada en entornos serverless (Cloudflare Pages).' },
+      { status: 501 }
+    );
   }
 
   try {

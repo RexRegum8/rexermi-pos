@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { dbQuery } from '@/lib/db';
 import { comparePassword, setSession, checkLockout, recordFailedAttempt, resetAttempts } from '@/lib/auth';

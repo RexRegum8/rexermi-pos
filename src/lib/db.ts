@@ -1,14 +1,27 @@
-import path from 'path';
-import fs from 'fs';
-import os from 'os';
 import { dbSchemaSql } from './dbSchema';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 
-const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'src', 'data', 'database.sqlite');
-const backupDir = process.env.BACKUP_DIR || path.join(os.homedir(), '.rexermi');
-const safeBackupPath = path.join(backupDir, 'db_backup_safe.sqlite');
-
 const isEdge = typeof EdgeRuntime === 'string';
+
+let dbPath = '';
+let backupDir = '';
+let safeBackupPath = '';
+let path: any = null;
+let fs: any = null;
+let os: any = null;
+
+if (!isEdge) {
+  const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+  path = requireFunc('path');
+  fs = requireFunc('fs');
+  os = requireFunc('os');
+  
+  dbPath = process.env.DATABASE_PATH || path.join(process['cwd'](), 'src', 'data', 'database.sqlite');
+  backupDir = process.env.BACKUP_DIR || path.join(os.homedir(), '.rexermi');
+  safeBackupPath = path.join(backupDir, 'db_backup_safe.sqlite');
+}
+
+
 
 // Declare a global or module-scoped connection for local better-sqlite3
 let localDbConnection: any = null;

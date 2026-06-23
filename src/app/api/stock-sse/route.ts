@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextRequest } from 'next/server';
 import { stockEmitter } from '@/lib/stockEmitter';
 

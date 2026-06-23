@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
 import { verifyAdminToken } from '@/lib/auth';
+
+export const runtime = 'edge';
 
 const ALLOWED_ACTIONS = ['restart', 'shutdown', 'reboot_app'] as const;
 type AdminAction = typeof ALLOWED_ACTIONS[number];
@@ -11,6 +12,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 });
   }
 
+  if (typeof EdgeRuntime === 'string') {
+    return NextResponse.json(
+      { error: 'Las acciones del sistema (reinicio/apagado) no están soportadas en entornos serverless (Cloudflare Pages).' },
+      { status: 501 }
+    );
+  }
+
+  const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+  const { exec } = requireFunc('child_process');
+
   try {
     const body = (await req.json()) as any;
     const { action } = body as { action: unknown };
@@ -20,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     const typedAction = action as AdminAction;
-    const platform = process.platform;
+    const platform = process['platform'];
     const isProd = process.env.NODE_ENV === 'production';
     const runCmd = isProd ? 'npm start' : 'npm run dev';
 
@@ -29,12 +40,12 @@ export async function POST(req: NextRequest) {
       // On Windows, close any active terminal window with these titles
       if (platform === 'win32') {
         const killCmd = `start "" cmd /c "timeout /t 1 >nul & taskkill /f /fi \"windowtitle eq Rexermi Server Terminal\" & taskkill /f /fi \"windowtitle eq Rexermi Server Manager\""`;
-        exec(killCmd, { cwd: process.cwd() });
+        exec(killCmd, { cwd: process['cwd']() });
       }
 
       setTimeout(() => {
         console.log('Stopping server process as requested...');
-        process.exit(0);
+        process['exit'](0);
       }, 500);
 
       return NextResponse.json({
@@ -54,11 +65,11 @@ export async function POST(req: NextRequest) {
         command = `sh -c "sleep 2 && (x-terminal-emulator -T \"Rexermi Server Terminal\" -e \"${runCmd}\" || gnome-terminal --title=\"Rexermi Server Terminal\" -- ${runCmd} || xterm -T \"Rexermi Server Terminal\" -e ${runCmd} || ${runCmd})"`;
       }
 
-      exec(command, { cwd: process.cwd() });
+      exec(command, { cwd: process['cwd']() });
 
       setTimeout(() => {
         console.log('Restarting server process as requested...');
-        process.exit(0);
+        process['exit'](0);
       }, 500);
 
       return NextResponse.json({

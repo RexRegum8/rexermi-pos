@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, getAdminSession } from '@/lib/auth';
 import { dbQuery } from '@/lib/db';
-import fs from 'fs';
-import path from 'path';
+
+export const runtime = 'edge';
 
 export async function GET(
   req: NextRequest,
@@ -10,6 +10,15 @@ export async function GET(
 ) {
   try {
     const { filename } = await context.params;
+
+    if (typeof EdgeRuntime === 'string') {
+      return new NextResponse('Servicio de archivos locales no disponible en la nube.', { status: 404 });
+    }
+
+    const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+    const fs = requireFunc('fs');
+    const path = requireFunc('path');
+
 
     // Check auth: either admin session or customer session
     const admin = await getAdminSession();
@@ -36,7 +45,7 @@ export async function GET(
     }
 
     // Resolve file path
-    const filePath = path.join(process.cwd(), 'private', 'receipts', filename);
+    const filePath = path.join(process['cwd'](), 'private', 'receipts', filename);
     if (!fs.existsSync(filePath)) {
       return new NextResponse('Archivo no encontrado', { status: 404 });
     }

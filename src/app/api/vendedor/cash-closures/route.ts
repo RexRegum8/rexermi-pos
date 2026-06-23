@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { dbQuery } from '@/lib/db';
 import { getPOSSession } from '@/lib/auth';

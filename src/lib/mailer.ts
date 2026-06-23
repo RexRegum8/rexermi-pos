@@ -1,4 +1,9 @@
-import nodemailer from 'nodemailer';
+let nodemailer: any = null;
+
+if (typeof EdgeRuntime !== 'string') {
+  const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+  nodemailer = requireFunc('nodemailer');
+}
 
 const smtpHost = process.env.SMTP_HOST || '';
 const smtpPort = parseInt(process.env.SMTP_PORT || '2525', 10);
@@ -22,6 +27,7 @@ const createTransporter = () => {
   }
 
   return nodemailer.createTransport({
+
     host: smtpHost,
     port: smtpPort,
     secure: smtpPort === 465, // true for 465, false for other ports

@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextRequest } from 'next/server';
 import { dbQuery } from '@/lib/db';
 import { verifyAdminToken } from '@/lib/auth';

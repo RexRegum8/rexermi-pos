@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { dbQuery, dbBatch } from '@/lib/db';
 import { getPOSSession } from '@/lib/auth';
@@ -297,7 +298,7 @@ export async function POST(req: NextRequest) {
             const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
             const fsLib = requireFunc('fs').promises;
             const pathLib = requireFunc('path');
-            const filePath = pathLib.join(process.cwd(), 'private', 'receipts', proofFilename);
+            const filePath = pathLib.join(process['cwd'](), 'private', 'receipts', proofFilename);
             await fsLib.mkdir(pathLib.dirname(filePath), { recursive: true });
             await fsLib.writeFile(filePath, buffer);
           } else {

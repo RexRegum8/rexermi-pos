@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+
+export const runtime = 'edge';
 
 interface RouteParams {
   params: Promise<{ filename: string }>;
@@ -9,12 +9,20 @@ interface RouteParams {
 export async function GET(req: NextRequest, { params }: RouteParams) {
   const { filename } = await params;
 
+  if (typeof EdgeRuntime === 'string') {
+    return new NextResponse('Servicio de archivos locales no disponible en la nube.', { status: 404 });
+  }
+
+  const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+  const fs = requireFunc('fs');
+  const path = requireFunc('path');
+
   // Evitar Directory Traversal para seguridad
   if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
     return new NextResponse('Nombre de archivo no válido.', { status: 400 });
   }
 
-  const filePath = path.join(process.cwd(), 'public', 'assets', 'uploads', filename);
+  const filePath = path.join(process['cwd'](), 'public', 'assets', 'uploads', filename);
 
   if (!fs.existsSync(filePath)) {
     return new NextResponse('Archivo no encontrado.', { status: 404 });
@@ -22,6 +30,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
   try {
     const fileBuffer = fs.readFileSync(filePath);
+
     
     // Determinar Content-Type según la extensión
     const ext = path.extname(filename).toLowerCase();

@@ -3,8 +3,18 @@ import { dbQuery } from '@/lib/db';
 import { verifyAdminToken } from '@/lib/auth';
 import { isValidImageOrPdfBuffer } from '@/lib/helpers';
 import { logAdminAction } from '@/lib/audit';
-import fs from 'fs';
-import path from 'path';
+
+export const runtime = 'edge';
+
+let fs: any = null;
+let path: any = null;
+
+if (typeof EdgeRuntime !== 'string') {
+  const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+  fs = requireFunc('fs');
+  path = requireFunc('path');
+}
+
 
 async function saveImage(file: File, prefix: string): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -13,7 +23,7 @@ async function saveImage(file: File, prefix: string): Promise<string> {
   }
   const ext = path.extname(file.name) || '.jpg';
   const filename = `${prefix}_${Date.now()}${ext}`;
-  const dir = path.join(process.cwd(), 'public', 'assets', 'uploads');
+  const dir = path.join(process['cwd'](), 'public', 'assets', 'uploads');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, filename), buffer);
   return filename;

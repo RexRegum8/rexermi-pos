@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { verifyAdminToken } from '@/lib/auth';
 
@@ -20,8 +21,8 @@ function createBackupFile(requireFunc: any): string {
   const Database = requireFunc('better-sqlite3');
   const XLSX = requireFunc('xlsx');
 
-  const dbPath = path.join(process.cwd(), 'src', 'data', 'database.sqlite');
-  const BACKUP_DIR = path.join(process.cwd(), 'src', 'data', 'backups');
+  const dbPath = path.join(process['cwd'](), 'src', 'data', 'database.sqlite');
+  const BACKUP_DIR = path.join(process['cwd'](), 'src', 'data', 'backups');
 
   if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
   
@@ -74,7 +75,7 @@ export async function GET(req: Request) {
   const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
   const Database = requireFunc('better-sqlite3');
   const path = requireFunc('path');
-  const dbPath = path.join(process.cwd(), 'src', 'data', 'database.sqlite');
+  const dbPath = path.join(process['cwd'](), 'src', 'data', 'database.sqlite');
   const dbw = new Database(dbPath);
 
   try {
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
   const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
   const Database = requireFunc('better-sqlite3');
   const path = requireFunc('path');
-  const dbPath = path.join(process.cwd(), 'src', 'data', 'database.sqlite');
+  const dbPath = path.join(process['cwd'](), 'src', 'data', 'database.sqlite');
   const db = new Database(dbPath);
 
   try {
@@ -151,7 +152,7 @@ export async function PUT(req: Request) {
   const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
   const path = requireFunc('path');
   const fs = requireFunc('fs');
-  const BACKUP_DIR = path.join(process.cwd(), 'src', 'data', 'backups');
+  const BACKUP_DIR = path.join(process['cwd'](), 'src', 'data', 'backups');
 
   try {
     if (!fs.existsSync(BACKUP_DIR)) return NextResponse.json({ files: [] });
