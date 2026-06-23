@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rexermi Admin Server Control</title>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at top right, #111827, #030712);
+      --card-bg: rgba(17, 24, 39, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-primary: #3b82f6; /* Blue */
+      --accent-success: #10b981; /* Green */
+      --accent-warning: #f59e0b; /* Amber */
+      --accent-danger: #ef4444;  /* Red */
+      --glow-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      padding: 20px;
+    }
+
+    /* Glassmorphic Widget Container */
+    .widget-container {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .widget-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-success), var(--accent-danger));
+    }
+
+    /* Header styling */
+    .widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .widget-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      background-color: var(--accent-success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      }
+    }
+
+    .settings-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: color 0.2s ease;
+    }
+
+    .settings-btn:hover {
+      color: var(--text-main);
+    }
+
+    /* Section Headers */
+    .section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    /* Progress Indicators for CPU and RAM */
+    .metric-row {
+      margin-bottom: 16px;
+    }
+
+    .metric-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+
+    .metric-label {
+      color: var(--text-muted);
+    }
+
+    .metric-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s;
+    }
+
+    .progress-blue {
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+    }
+
+    .progress-purple {
+      background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+      box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+    }
+
+    /* Notifications / Badges */
+    .notifications-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .notification-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      padding: 12px;
+      text-align: center;
+      transition: transform 0.2s, background-color 0.2s;
+    }
+
+    .notification-card.has-alerts {
+      border-color: rgba(239, 68, 68, 0.2);
+      background: rgba(239, 68, 68, 0.03);
+    }
+
+    .notification-card:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .notification-count {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .notification-count.highlight-red {
+      color: var(--accent-danger);
+      text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+      animation: alertPulse 1.5s infinite alternate;
+    }
+
+    @keyframes alertPulse {
+      from { text-shadow: 0 0 4px rgba(239, 68, 68, 0.2); }
+      to { text-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
+    }
+
+    .notification-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Database status banner */
+    .db-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(16, 185, 129, 0.05);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      margin-bottom: 24px;
+    }
+
+    .db-status-bar.error {
+      background: rgba(239, 68, 68, 0.05);
+      border-color: rgba(239, 68, 68, 0.15);
+    }
+
+    .db-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-success);
+    }
+
+    /* Action Buttons Area */
+    .actions-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-ping {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+
+    .btn-ping:hover {
+      background: rgba(59, 130, 246, 0.2);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+    }
+
+    .btn-restart {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+    }
+
+    .btn-restart:hover {
+      background: rgba(245, 158, 11, 0.2);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    }
+
+    .btn-shutdown {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .btn-shutdown:hover {
+      background: rgba(239, 68, 68, 0.2);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+    }
+
+    .btn-rebootapp {
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      color: #a78bfa;
+      margin-top: 4px;
+    }
+
+    .btn-rebootapp:hover {
+      background: rgba(139, 92, 246, 0.2);
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+    }
+
+    /* Custom Confirmation Modal Overlay */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      border-radius: 24px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 24px;
+      width: 90%;
+      max-width: 360px;
+      text-align: center;
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      display: inline-block;
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .modal-body {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-btn-confirm {
+      flex: 1;
+      background: var(--accent-danger);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .modal-btn-confirm.warning {
+      background: var(--accent-warning);
+    }
+
+    .modal-btn-cancel {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .modal-btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Configuration Panel Panel */
+    .config-panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #111827;
+      z-index: 5;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .config-panel.active {
+      transform: translateX(0);
+    }
+
+    .config-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .config-input-group {
+      margin-bottom: 16px;
+    }
+
+    .config-label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .config-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .config-input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+    }
+
+    /* Info Badge Footer */
+    .widget-footer {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 20px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Login Screen ── */
+    .screen-view {
+      display: flex;
+      flex-direction: column;
+    }
+    .screen-view.hidden {
+      display: none;
+    }
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .login-logo {
+      font-size: 2.2rem;
+      margin-bottom: 6px;
+    }
+    .login-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .login-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .input-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .input-field {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+    }
+    .login-error {
+      color: var(--accent-danger);
+      font-size: 0.75rem;
+      text-align: center;
+      min-height: 16px;
+    }
+
+    /* ── Offline Instructions Modal ── */
+    .offline-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3,7,18,0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .offline-modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .offline-modal-card {
+      background: #111827;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 24px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .offline-modal-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .offline-modal-body {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .offline-code {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: #60a5fa;
+      margin: 6px 0 12px;
+      word-break: break-all;
+    }
+    .offline-modal-close {
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text-main);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .offline-modal-close:hover {
+      background: rgba(255,255,255,0.14);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── OFFLINE INSTRUCTIONS MODAL (global, outside widget) ── -->
+  <div class="offline-modal-overlay" id="offline-modal">
+    <div class="offline-modal-card">
+      <div class="offline-modal-title">💡 Cómo Encender el Servidor</div>
+      <p class="offline-modal-body">
+        Este widget corre en el navegador y no puede lanzar comandos locales directamente.
+        Para encender el servidor, abre una terminal en la carpeta del proyecto y ejecuta:
+      </p>
+      <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:2px;">Windows:</p>
+      <div class="offline-code">iniciar.bat</div>
+      <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:2px;">Linux / Mac:</p>
+      <div class="offline-code">bash iniciar.sh</div>
+      <p class="offline-modal-body" style="margin-top:6px;">
+        También puedes iniciar el servidor directamente con:<br>
+        <span style="color:#60a5fa;font-family:'JetBrains Mono',monospace;">npm run dev</span> (desarrollo) &nbsp;/&nbsp;
+        <span style="color:#60a5fa;font-family:'JetBrains Mono',monospace;">npm start</span> (producción)
+      </p>
+      <button class="offline-modal-close" id="offline-modal-close">Entendido</button>
+    </div>
+  </div>
+
+  <div class="widget-container">
+
+    <!-- ── VIEW: LOGIN ── -->
+    <div class="screen-view" id="view-login">
+      <div class="login-container">
+        <div class="login-header">
+          <div class="login-logo">🔐</div>
+          <h2 class="login-title">Control de Servidor</h2>
+          <p class="login-subtitle">Inicia sesión con tus credenciales de administrador</p>
+        </div>
+        <div class="input-group">
+          <label class="input-label" for="login-username">Usuario / Email</label>
+          <input type="text" id="login-username" class="input-field" placeholder="admin" autocomplete="username">
+        </div>
+        <div class="input-group">
+          <label class="input-label" for="login-password">Contraseña</label>
+          <input type="password" id="login-password" class="input-field" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div class="login-error" id="login-error"></div>
+        <button class="btn btn-ping" id="btn-submit-login">🔑 Iniciar Sesión</button>
+        <button class="settings-btn" id="login-config-btn" style="margin-top:10px;text-align:center;">⚙️ Ajustar URL del Servidor</button>
+      </div>
+    </div>
+
+    <!-- ── VIEW: DASHBOARD ── -->
+    <div class="screen-view hidden" id="view-dashboard">
+      <div class="widget-header">
+        <div class="widget-title">
+          <span id="status-dot" class="pulse-dot"></span>
+          <span id="status-text">REXERMI SERVER</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="settings-btn" id="btn-logout" title="Cerrar Sesión" style="color:var(--accent-danger);">🚪</button>
+          <button class="settings-btn" id="open-config-btn" title="Configurar Conexión">⚙️ Config</button>
+        </div>
+      </div>
+
+      <!-- Hardware Section -->
+      <h3 class="section-title">Hardware</h3>
+      <div class="metric-row">
+        <div class="metric-info">
+          <span class="metric-label">Uso de CPU</span>
+          <span id="cpu-text" class="metric-value">0%</span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="cpu-bar" class="progress-bar progress-blue"></div>
+        </div>
+      </div>
+      <div class="metric-row">
+        <div class="metric-info">
+          <span class="metric-label">Memoria RAM</span>
+          <span id="ram-text" class="metric-value">0 GB / 0 GB</span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="ram-bar" class="progress-bar progress-purple"></div>
+        </div>
+      </div>
+
+      <!-- Database Section -->
+      <h3 class="section-title">Base de Datos</h3>
+      <div id="db-status-bar" class="db-status-bar">
+        <span>SQLite Database</span>
+        <span id="db-mode-badge" class="db-badge">WAL</span>
+      </div>
+
+      <!-- Alerts Section -->
+      <h3 class="section-title">Alertas de Administración</h3>
+      <div class="notifications-grid">
+        <div class="notification-card" id="orders-card">
+          <div id="orders-count" class="notification-count">0</div>
+          <div class="notification-label">Pedidos Pendientes</div>
+        </div>
+        <div class="notification-card" id="stock-card">
+          <div id="stock-count" class="notification-count">0</div>
+          <div class="notification-label">Stock Crítico</div>
+        </div>
+      </div>
+
+      <!-- System Actions Section -->
+      <h3 class="section-title">Controles de Servidor</h3>
+      <div class="actions-section">
+        <button class="btn btn-ping" id="btn-ping">⚡ Encender / Activar</button>
+        <button class="btn btn-restart" id="btn-restart">🔄 Reiniciar Servidor</button>
+        <button class="btn btn-shutdown" id="btn-shutdown">🛑 Apagar Servidor</button>
+        <button class="btn btn-rebootapp" id="btn-rebootapp" title="Cierra la app para que systemd o PM2 la levanten limpia">
+          ⚙️ Autoreiniciar Proceso (App)
+        </button>
+      </div>
+
+      <div class="widget-footer" id="widget-footer">PLATFORM: UNKNOWN | UPTIME: 0s</div>
+    </div>
+
+    <!-- Confirmation Modal Overlay -->
+    <div class="modal-overlay" id="confirm-modal">
+      <div class="modal-card">
+        <span class="modal-icon" id="modal-icon">⚠️</span>
+        <h4 class="modal-title" id="modal-title">¿Estás seguro?</h4>
+        <p class="modal-body" id="modal-body">Esta acción detendrá de inmediato las operaciones y afectará a todos los clientes activos en el sistema.</p>
+        <div class="modal-actions">
+          <button class="modal-btn-cancel" id="modal-cancel">Cancelar</button>
+          <button class="modal-btn-confirm" id="modal-confirm">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuration Panel -->
+    <div class="config-panel" id="config-panel">
+      <div class="config-header">
+        <h3 class="section-title" style="margin: 0;">Configuración de Conexión</h3>
+        <button class="settings-btn" id="close-config-btn">❌</button>
+      </div>
+      <div class="config-input-group">
+        <label class="config-label" for="api-url">URL del Backend / IP LXC</label>
+        <input type="text" id="api-url" class="config-input" placeholder="http://localhost:8080">
+      </div>
+      <div class="config-input-group">
+        <label class="config-label" for="poll-interval">Intervalo de Polling (segundos)</label>
+        <input type="number" id="poll-interval" class="config-input" value="5" min="2">
+      </div>
+      <button class="btn btn-ping" id="save-config-btn" style="margin-top: auto;">Guardar Configuración</button>
+    </div>
+
+  </div>
+
+  <script>
+    // ── State ──
+    const state = {
+      apiUrl: localStorage.getItem('rexermi_api_url') || '',
+      pollInterval: parseInt(localStorage.getItem('rexermi_poll_interval') || '5', 10),
+      token: localStorage.getItem('rexermi_admin_token') || '',
+      pendingAction: null,
+      pollingTimer: null,
+      isOffline: false
+    };
+
+    // ── DOM Elements ──
+    const el = {
+      viewLogin:        document.getElementById('view-login'),
+      viewDashboard:    document.getElementById('view-dashboard'),
+      loginUsername:    document.getElementById('login-username'),
+      loginPassword:    document.getElementById('login-password'),
+      loginError:       document.getElementById('login-error'),
+      btnSubmitLogin:   document.getElementById('btn-submit-login'),
+      loginConfigBtn:   document.getElementById('login-config-btn'),
+      btnLogout:        document.getElementById('btn-logout'),
+
+      statusDot:        document.getElementById('status-dot'),
+      statusText:       document.getElementById('status-text'),
+      cpuText:          document.getElementById('cpu-text'),
+      cpuBar:           document.getElementById('cpu-bar'),
+      ramText:          document.getElementById('ram-text'),
+      ramBar:           document.getElementById('ram-bar'),
+      dbStatusBar:      document.getElementById('db-status-bar'),
+      dbModeBadge:      document.getElementById('db-mode-badge'),
+      ordersCount:      document.getElementById('orders-count'),
+      ordersCard:       document.getElementById('orders-card'),
+      stockCount:       document.getElementById('stock-count'),
+      stockCard:        document.getElementById('stock-card'),
+      widgetFooter:     document.getElementById('widget-footer'),
+
+      btnPing:          document.getElementById('btn-ping'),
+      btnRestart:       document.getElementById('btn-restart'),
+      btnShutdown:      document.getElementById('btn-shutdown'),
+      btnRebootApp:     document.getElementById('btn-rebootapp'),
+
+      openConfigBtn:    document.getElementById('open-config-btn'),
+      closeConfigBtn:   document.getElementById('close-config-btn'),
+      configPanel:      document.getElementById('config-panel'),
+      apiUrlInput:      document.getElementById('api-url'),
+      pollIntervalInput: document.getElementById('poll-interval'),
+      saveConfigBtn:    document.getElementById('save-config-btn'),
+
+      confirmModal:     document.getElementById('confirm-modal'),
+      modalTitle:       document.getElementById('modal-title'),
+      modalBody:        document.getElementById('modal-body'),
+      modalIcon:        document.getElementById('modal-icon'),
+      modalConfirm:     document.getElementById('modal-confirm'),
+      modalCancel:      document.getElementById('modal-cancel'),
+
+      offlineModal:     document.getElementById('offline-modal'),
+      offlineClose:     document.getElementById('offline-modal-close')
+    };
+
+    // ── Helpers ──
+    function formatBytes(bytes, decimals = 2) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    function formatUptime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+      return `${h}h ${m}m ${s}s`;
+    }
+
+    function showView(name) {
+      el.viewLogin.classList.toggle('hidden', name !== 'login');
+      el.viewDashboard.classList.toggle('hidden', name !== 'dashboard');
+    }
+
+    function getAuthHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      if (state.token) {
+        headers['Authorization'] = `Bearer ${state.token}`;
+      }
+      return headers;
+    }
+
+    // ── Login ──
+    async function handleLogin() {
+      const username = el.loginUsername.value.trim();
+      const password = el.loginPassword.value;
+      if (!username || !password) {
+        el.loginError.innerText = 'Introduce usuario y contraseña.';
+        return;
+      }
+      el.loginError.innerText = '';
+      el.btnSubmitLogin.disabled = true;
+      el.btnSubmitLogin.innerText = 'Verificando...';
+
+      const url = `${state.apiUrl}/api/auth/admin-login`;
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          state.token = data.token || '';
+          localStorage.setItem('rexermi_admin_token', state.token);
+          showView('dashboard');
+          startPolling();
+        } else {
+          el.loginError.innerText = data.error || 'Credenciales inválidas.';
+        }
+      } catch (err) {
+        el.loginError.innerText = 'No se pudo conectar con el servidor.';
+      } finally {
+        el.btnSubmitLogin.disabled = false;
+        el.btnSubmitLogin.innerText = '🔑 Iniciar Sesión';
+      }
+    }
+
+    function handleLogout() {
+      state.token = '';
+      localStorage.removeItem('rexermi_admin_token');
+      if (state.pollingTimer) clearInterval(state.pollingTimer);
+      showView('login');
+    }
+
+    // ── Status Fetch ──
+    async function fetchStatus() {
+      if (!state.apiUrl) { showView('login'); return; }
+      const url = `${state.apiUrl}/api/admin/server-control/status`;
+      try {
+        const res = await fetch(url, {
+          headers: getAuthHeaders(),
+          credentials: 'include'
+        });
+        if (!res.ok) {
+          if (res.status === 401) {
+            // Session expired — go back to login
+            handleLogout();
+            return;
+          }
+          throw new Error(`Error HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        updateUI(data);
+        state.isOffline = false;
+      } catch (err) {
+        showOffline(err.message);
+        state.isOffline = true;
+      }
+    }
+
+    function updateUI(data) {
+      showView('dashboard');
+      el.statusDot.style.backgroundColor = 'var(--accent-success)';
+      el.statusDot.style.boxShadow = '0 0 8px var(--accent-success)';
+      el.statusText.innerText = 'CONECTADO';
+      el.statusText.style.color = 'var(--text-main)';
+
+      el.cpuText.innerText = `${data.hardware.cpu}%`;
+      el.cpuBar.style.width = `${data.hardware.cpu}%`;
+      el.cpuBar.className = data.hardware.cpu > 80 ? 'progress-bar progress-purple' : 'progress-bar progress-blue';
+
+      el.ramText.innerText = `${formatBytes(data.hardware.memory.used, 1)} / ${formatBytes(data.hardware.memory.total, 1)}`;
+      el.ramBar.style.width = `${data.hardware.memory.usagePercentage}%`;
+
+      if (data.database.connected) {
+        el.dbStatusBar.className = 'db-status-bar';
+        el.dbModeBadge.innerText = data.database.mode;
+        el.dbModeBadge.className = 'db-badge';
+        el.dbModeBadge.style.background = data.database.isWal ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)';
+        el.dbModeBadge.style.color = data.database.isWal ? 'var(--accent-success)' : 'var(--accent-warning)';
+      } else {
+        el.dbStatusBar.className = 'db-status-bar error';
+        el.dbModeBadge.innerText = 'DISCONNECTED';
+        el.dbModeBadge.style.background = 'rgba(239,68,68,0.2)';
+        el.dbModeBadge.style.color = 'var(--accent-danger)';
+      }
+
+      el.ordersCount.innerText = data.notifications.pendingOrders;
+      el.ordersCount.className = data.notifications.pendingOrders > 0 ? 'notification-count highlight-red' : 'notification-count';
+      el.ordersCard.classList.toggle('has-alerts', data.notifications.pendingOrders > 0);
+
+      el.stockCount.innerText = data.notifications.lowStockAlerts;
+      el.stockCount.className = data.notifications.lowStockAlerts > 0 ? 'notification-count highlight-red' : 'notification-count';
+      el.stockCard.classList.toggle('has-alerts', data.notifications.lowStockAlerts > 0);
+
+      el.widgetFooter.innerText = `PLATFORM: ${data.hardware.platform.toUpperCase()} | UPTIME: ${formatUptime(data.hardware.uptime)}`;
+    }
+
+    function showOffline(message = 'Sin conexión') {
+      el.statusDot.style.backgroundColor = 'var(--accent-danger)';
+      el.statusDot.style.boxShadow = '0 0 8px var(--accent-danger)';
+      el.statusText.innerText = 'DESCONECTADO';
+      el.statusText.style.color = 'var(--accent-danger)';
+      el.widgetFooter.innerText = message;
+      el.cpuBar.style.width = '0%';
+      el.cpuText.innerText = '0%';
+      el.ramBar.style.width = '0%';
+      el.ramText.innerText = '0 GB / 0 GB';
+    }
+
+    // ── Action API ──
+    async function executeAction(action) {
+      const url = `${state.apiUrl}/api/admin/server-control/action`;
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+          body: JSON.stringify({ action })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Éxito: ${data.message}`);
+          fetchStatus();
+        } else {
+          alert(`Error: ${data.error}`);
+        }
+      } catch (err) {
+        alert(`Fallo en la comunicación con el servidor: ${err.message}`);
+      }
+    }
+
+    // ── Confirmation Modal ──
+    function triggerConfirmModal(action, title, body, confirmText = 'Confirmar', isDanger = true) {
+      state.pendingAction = action;
+      el.modalTitle.innerText = title;
+      el.modalBody.innerText = body;
+      el.modalConfirm.innerText = confirmText;
+      el.modalIcon.innerText = isDanger ? '🛑' : '⚠️';
+      el.modalConfirm.className = isDanger ? 'modal-btn-confirm' : 'modal-btn-confirm warning';
+      el.confirmModal.classList.add('active');
+    }
+
+    function closeModal() {
+      el.confirmModal.classList.remove('active');
+      state.pendingAction = null;
+    }
+
+    // ── Polling ──
+    function startPolling() {
+      if (state.pollingTimer) clearInterval(state.pollingTimer);
+      fetchStatus();
+      state.pollingTimer = setInterval(fetchStatus, state.pollInterval * 1000);
+    }
+
+    function initConfig() {
+      el.apiUrlInput.value = state.apiUrl;
+      el.pollIntervalInput.value = state.pollInterval;
+    }
+
+    // ── Event Listeners ──
+
+    // Login
+    el.btnSubmitLogin.addEventListener('click', handleLogin);
+    el.loginPassword.addEventListener('keyup', e => { if (e.key === 'Enter') handleLogin(); });
+    el.btnLogout.addEventListener('click', handleLogout);
+    el.loginConfigBtn.addEventListener('click', () => { initConfig(); el.configPanel.classList.add('active'); });
+
+    // Ping / Encender
+    el.btnPing.addEventListener('click', () => {
+      if (state.isOffline) {
+        // Web widget can't run local commands — show instructions modal
+        el.offlineModal.classList.add('active');
+      } else {
+        fetchStatus();
+      }
+    });
+
+    // Offline modal close
+    el.offlineClose.addEventListener('click', () => el.offlineModal.classList.remove('active'));
+    el.offlineModal.addEventListener('click', e => {
+      if (e.target === el.offlineModal) el.offlineModal.classList.remove('active');
+    });
+
+    el.btnRestart.addEventListener('click', () => triggerConfirmModal(
+      'restart',
+      'Reiniciar Servidor Físico',
+      '¿Confirmas el reinicio del servidor físico? Todos los servicios locales y sesiones de usuario se desconectarán durante la secuencia de inicio.',
+      'Reiniciar Ahora', false
+    ));
+
+    el.btnShutdown.addEventListener('click', () => triggerConfirmModal(
+      'shutdown',
+      'Apagar Servidor Físico',
+      '¿Confirmas el apagado definitivo del hardware del servidor? Tendrás que encenderlo físicamente o por Wake-on-LAN para volver a habilitar el marketplace.',
+      'Apagar Servidor', true
+    ));
+
+    el.btnRebootApp.addEventListener('click', () => triggerConfirmModal(
+      'reboot_app',
+      'Reiniciar Proceso de la App',
+      'Esta acción detendrá inmediatamente el proceso Node.js actual. Ideal si usas PM2 o systemd para reiniciar la aplicación automáticamente.',
+      'Reiniciar Proceso', false
+    ));
+
+    el.modalConfirm.addEventListener('click', () => { if (state.pendingAction) executeAction(state.pendingAction); closeModal(); });
+    el.modalCancel.addEventListener('click', closeModal);
+
+    // Config panel
+    el.openConfigBtn.addEventListener('click', () => { initConfig(); el.configPanel.classList.add('active'); });
+    el.closeConfigBtn.addEventListener('click', () => el.configPanel.classList.remove('active'));
+    el.saveConfigBtn.addEventListener('click', () => {
+      const cleanUrl = el.apiUrlInput.value.trim().replace(/\/$/, '');
+      const cleanInterval = parseInt(el.pollIntervalInput.value, 10) || 5;
+      state.apiUrl = cleanUrl;
+      state.pollInterval = cleanInterval;
+      localStorage.setItem('rexermi_api_url', cleanUrl);
+      localStorage.setItem('rexermi_poll_interval', cleanInterval.toString());
+      el.configPanel.classList.remove('active');
+      startPolling();
+    });
+
+    // ── Startup: decide login or dashboard ──
+    if (state.token && state.apiUrl) {
+      // Try to fetch status immediately; if 401 → login screen via fetchStatus
+      showView('dashboard');
+      startPolling();
+    } else {
+      showView('login');
+    }
+  </script>
+</body>
+</html>

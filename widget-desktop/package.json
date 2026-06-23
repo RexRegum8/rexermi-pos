@@ -1,0 +1,12 @@
+{
+  "name": "rexermi-server-widget",
+  "version": "1.0.0",
+  "description": "Widget de escritorio para monitorizar y controlar el servidor Rexermi",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^30.0.1"
+  }
+}

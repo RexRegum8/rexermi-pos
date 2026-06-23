@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rexermi Admin Server Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at top right, #111827, #030712);
+      --card-bg: rgba(17, 24, 39, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-primary: #3b82f6;
+      --accent-success: #10b981;
+      --accent-warning: #f59e0b;
+      --accent-danger: #ef4444;
+      --glow-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: transparent; /* Transparent background for glassmorphic rounded widget */
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    /* Glassmorphic Widget Container */
+    .widget-container {
+      width: 100%;
+      height: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Drag Bar for Frameless Window */
+    .title-drag-bar {
+      height: 28px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.02);
+      margin-top: -20px;
+      margin-left: -20px;
+      margin-right: -20px;
+      margin-bottom: 15px;
+      padding: 0 16px;
+      width: calc(100% + 40px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      -webkit-app-region: drag; /* Enables dragging the window */
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .drag-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .window-controls {
+      display: flex;
+      gap: 8px;
+      -webkit-app-region: no-drag; /* Excludes buttons from dragging */
+    }
+
+    .window-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .window-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+    }
+
+    .window-btn.close-btn:hover {
+      background: var(--accent-danger);
+      color: white;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent-success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-success);
+      display: inline-block;
+    }
+
+    .pulse-dot.offline {
+      background-color: var(--accent-danger);
+      box-shadow: 0 0 8px var(--accent-danger);
+    }
+
+    /* Dashboard Header */
+    .widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .widget-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .settings-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: color 0.2s ease;
+    }
+
+    .settings-btn:hover {
+      color: var(--text-main);
+    }
+
+    /* Section Headers */
+    .section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    /* Metrics */
+    .metric-row {
+      margin-bottom: 14px;
+    }
+
+    .metric-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      font-size: 0.8rem;
+    }
+
+    .metric-label {
+      color: var(--text-muted);
+    }
+
+    .metric-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .progress-blue {
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    }
+
+    .progress-purple {
+      background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+    }
+
+    /* Database banner */
+    .db-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(16, 185, 129, 0.05);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      margin-bottom: 16px;
+    }
+
+    .db-status-bar.error {
+      background: rgba(239, 68, 68, 0.05);
+      border-color: rgba(239, 68, 68, 0.15);
+    }
+
+    .db-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+
+    /* Notifications */
+    .notifications-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .notification-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .notification-card.has-alerts {
+      border-color: rgba(239, 68, 68, 0.15);
+      background: rgba(239, 68, 68, 0.02);
+    }
+
+    .notification-count {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .notification-count.highlight-red {
+      color: var(--accent-danger);
+    }
+
+    .notification-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Action Buttons */
+    .actions-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-ping {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+
+    .btn-ping:hover {
+      background: rgba(59, 130, 246, 0.2);
+    }
+
+    .btn-restart {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+    }
+
+    .btn-restart:hover {
+      background: rgba(245, 158, 11, 0.2);
+    }
+
+    .btn-shutdown {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .btn-shutdown:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    .btn-rebootapp {
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      color: #a78bfa;
+    }
+
+    .btn-rebootapp:hover {
+      background: rgba(139, 92, 246, 0.2);
+    }
+
+    .btn-hide {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      color: #60a5fa;
+    }
+
+    .btn-hide:hover {
+      background: rgba(59, 130, 246, 0.2);
+    }
+
+    /* Screen Views */
+    .screen-view {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+    }
+
+    .screen-view.hidden {
+      display: none;
+    }
+
+    /* Glassmorphic Login Form */
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .login-logo {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    .login-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .login-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .input-label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--text-main);
+      font-size: 0.8rem;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+    }
+
+    .login-error {
+      color: var(--accent-danger);
+      font-size: 0.75rem;
+      margin-bottom: 10px;
+      text-align: center;
+      min-height: 18px;
+    }
+
+    /* Modal Confirmation */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(3, 7, 18, 0.9);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      border-radius: 20px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px;
+      width: 90%;
+      text-align: center;
+    }
+
+    .modal-icon {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+
+    .modal-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .modal-body {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 16px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-btn-confirm {
+      flex: 1;
+      background: var(--accent-danger);
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+
+    .modal-btn-cancel {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+
+    /* Configuration Panel */
+    .config-panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #111827;
+      z-index: 5;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 20px;
+    }
+
+    .config-panel.active {
+      transform: translateX(0);
+    }
+
+    .config-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .config-input-group {
+      margin-bottom: 12px;
+    }
+
+    .widget-footer {
+      text-align: center;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: auto;
+      padding-top: 10px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="widget-container">
+    
+    <!-- Custom Drag & Window Control Bar -->
+    <div class="title-drag-bar">
+      <div class="drag-title">Rexermi Server Control</div>
+      <div class="window-controls">
+        <button class="window-btn" id="minimize-window-btn" title="Minimizar Widget">—</button>
+        <button class="window-btn" id="hide-window-btn" title="Ocultar en Segundo Plano" style="margin-right: 4px; padding: 2px 6px;">👁️ Ocultar</button>
+        <button class="window-btn close-btn" id="close-window-btn" title="Cerrar Widget">✕</button>
+      </div>
+    </div>
+
+    <!-- VIEW 1: LOGIN (Appears when not authenticated) -->
+    <div class="screen-view hidden" id="view-login">
+      <div class="login-container">
+        <div class="login-header">
+          <div class="login-logo">🔐</div>
+          <h2 class="login-title">Acceso Administrador</h2>
+          <p class="login-subtitle">Introduce credenciales para monitorizar el servidor</p>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="login-username">Usuario / Email</label>
+          <input type="text" id="login-username" class="input-field" placeholder="admin">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="login-password">Contraseña</label>
+          <input type="password" id="login-password" class="input-field" placeholder="••••••••">
+        </div>
+
+        <div class="login-error" id="login-error"></div>
+
+        <button class="btn btn-ping" id="btn-submit-login">
+          Iniciar Sesión
+        </button>
+        
+        <button class="settings-btn" id="login-config-btn" style="margin-top: 12px;">
+          ⚙️ Ajustar URL Servidor
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW 2: MONITORING DASHBOARD -->
+    <div class="screen-view" id="view-dashboard">
+      <div class="widget-header">
+        <div class="widget-title">
+          <span id="status-dot" class="pulse-dot"></span>
+          <span id="status-text">CONECTANDO...</span>
+        </div>
+        <button class="settings-btn" id="open-config-btn" title="Configurar Conexión">⚙️ Config</button>
+      </div>
+
+      <!-- Hardware -->
+      <h3 class="section-title">Hardware</h3>
+      <div class="metric-row">
+        <div class="metric-info">
+          <span class="metric-label">Uso de CPU</span>
+          <span id="cpu-text" class="metric-value">0%</span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="cpu-bar" class="progress-bar progress-blue"></div>
+        </div>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric-info">
+          <span class="metric-label">Memoria RAM</span>
+          <span id="ram-text" class="metric-value">0 GB / 0 GB</span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="ram-bar" class="progress-bar progress-purple"></div>
+        </div>
+      </div>
+
+      <!-- Barcode Scanner Status -->
+      <div class="metric-row" style="margin-top: 10px; padding-top: 6px; border-top: 1px dashed rgba(255, 255, 255, 0.05);">
+        <div class="metric-info" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <span class="metric-label">🔌 Lector de Código</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="scanner-status-badge" style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); background: rgba(255, 255, 255, 0.05); padding: 2px 6px; border-radius: 4px; display: inline-block;">
+              BUSCANDO...
+            </span>
+            <button id="btn-scanner-detail" style="background: transparent; border: none; color: var(--accent-primary); font-size: 0.72rem; cursor: pointer; text-decoration: underline; font-weight: 500;">
+              Detalles
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Database -->
+      <h3 class="section-title">Base de Datos</h3>
+      <div id="db-status-bar" class="db-status-bar">
+        <span>SQLite Database</span>
+        <span id="db-mode-badge" class="db-badge">WAL</span>
+      </div>
+
+      <!-- Alerts -->
+      <h3 class="section-title">Alertas Admin</h3>
+      <div class="notifications-grid">
+        <div class="notification-card" id="orders-card">
+          <div id="orders-count" class="notification-count">0</div>
+          <div class="notification-label">Pedidos Pendientes</div>
+        </div>
+        <div class="notification-card" id="stock-card">
+          <div id="stock-count" class="notification-count">0</div>
+          <div class="notification-label">Stock Crítico</div>
+        </div>
+      </div>
+
+      <!-- Server Actions -->
+      <h3 class="section-title">Controles de Servidor</h3>
+      <div class="actions-section">
+        <button class="btn btn-ping" id="btn-ping">
+          ⚡ Encender / Activar
+        </button>
+        <button class="btn btn-hide" id="btn-hide">
+          👁️ Ocultar en Segundo Plano
+        </button>
+        <button class="btn btn-restart" id="btn-restart">
+          🔄 Reiniciar Servidor
+        </button>
+        <button class="btn btn-shutdown" id="btn-shutdown">
+          🛑 Apagar Servidor
+        </button>
+        <button class="btn btn-rebootapp" id="btn-rebootapp">
+          ⚙️ Autoreiniciar App
+        </button>
+      </div>
+
+      <div class="widget-footer" id="widget-footer">
+        Cargando datos...
+      </div>
+    </div>
+
+    <!-- Configuration Screen Panel -->
+    <div class="config-panel" id="config-panel">
+      <div class="config-header">
+        <h3 class="section-title" style="margin: 0;">Configuración</h3>
+        <button class="settings-btn" id="close-config-btn">❌</button>
+      </div>
+
+      <div class="config-input-group">
+        <label class="input-label" for="api-url">URL del Backend</label>
+        <input type="text" id="api-url" class="input-field" placeholder="http://localhost:8080">
+      </div>
+
+      <div class="config-input-group">
+        <label class="input-label" for="poll-interval">Intervalo (segundos)</label>
+        <input type="number" id="poll-interval" class="input-field" value="5" min="2">
+      </div>
+
+      <button class="btn btn-ping" id="save-config-btn" style="margin-top: auto;">
+        Guardar Configuración
+      </button>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="confirm-modal">
+      <div class="modal-card">
+        <span class="modal-icon" id="modal-icon">⚠️</span>
+        <h4 class="modal-title" id="modal-title">¿Estás seguro?</h4>
+        <p class="modal-body" id="modal-body">Esta acción detendrá las operaciones del servidor de inmediato.</p>
+        <div class="modal-actions">
+          <button class="modal-btn-cancel" id="modal-cancel">Cancelar</button>
+          <button class="modal-btn-confirm" id="modal-confirm">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scanner Details Modal -->
+    <div class="modal-overlay" id="scanner-modal">
+      <div class="modal-card" style="width: 95%; max-height: 85%; display: flex; flex-direction: column; overflow: hidden; text-align: left;">
+        <span class="modal-icon" style="font-size: 1.5rem; text-align: center; margin-bottom: 5px;">🔌</span>
+        <h4 class="modal-title" style="text-align: center; margin-bottom: 10px;">Diagnóstico de Lector y Hardware</h4>
+        
+        <div style="flex: 1; overflow-y: auto; margin-bottom: 15px; font-size: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; border: 1px solid rgba(255,255,255,0.05);">
+          <div style="font-weight: 600; color: var(--accent-warning); margin-bottom: 8px; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">Dispositivos Conectados:</div>
+          <div id="scanner-devices-list" style="display: flex; flex-direction: column; gap: 6px;">
+            <!-- Dynamic device list will be injected here -->
+          </div>
+
+          <div id="scanner-errors-section" style="margin-top: 12px; display: none;">
+            <div style="font-weight: 600; color: var(--accent-danger); margin-bottom: 6px; font-size: 0.8rem; border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding-bottom: 4px;">⚠️ Errores Detectados:</div>
+            <div id="scanner-errors-list" style="display: flex; flex-direction: column; gap: 4px; color: var(--accent-danger);">
+              <!-- Dynamic errors will be injected here -->
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="modal-btn-cancel" id="scanner-modal-close" style="flex: 1; width: 100%;">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let ipcRenderer = null;
+    try {
+      ipcRenderer = require('electron').ipcRenderer;
+    } catch (e) {
+      console.warn('Electron IPC not available. Running in standard browser mode.');
+    }
+
+    // Configuration & State
+    const state = {
+      apiUrl: localStorage.getItem('rexermi_api_url') || 'http://localhost:8080',
+      pollInterval: parseInt(localStorage.getItem('rexermi_poll_interval') || '5', 10),
+      token: localStorage.getItem('rexermi_admin_token') || '',
+      pendingAction: null,
+      pollingTimer: null
+    };
+
+    // DOM Elements
+    const elements = {
+      viewLogin: document.getElementById('view-login'),
+      viewDashboard: document.getElementById('view-dashboard'),
+      loginUsername: document.getElementById('login-username'),
+      loginPassword: document.getElementById('login-password'),
+      loginError: document.getElementById('login-error'),
+      btnSubmitLogin: document.getElementById('btn-submit-login'),
+      loginConfigBtn: document.getElementById('login-config-btn'),
+      
+      statusDot: document.getElementById('status-dot'),
+      statusText: document.getElementById('status-text'),
+      cpuText: document.getElementById('cpu-text'),
+      cpuBar: document.getElementById('cpu-bar'),
+      ramText: document.getElementById('ram-text'),
+      ramBar: document.getElementById('ram-bar'),
+      dbStatusBar: document.getElementById('db-status-bar'),
+      dbModeBadge: document.getElementById('db-mode-badge'),
+      ordersCount: document.getElementById('orders-count'),
+      ordersCard: document.getElementById('orders-card'),
+      stockCount: document.getElementById('stock-count'),
+      stockCard: document.getElementById('stock-card'),
+      widgetFooter: document.getElementById('widget-footer'),
+      
+      btnPing: document.getElementById('btn-ping'),
+      btnRestart: document.getElementById('btn-restart'),
+      btnShutdown: document.getElementById('btn-shutdown'),
+      btnRebootApp: document.getElementById('btn-rebootapp'),
+
+      openConfigBtn: document.getElementById('open-config-btn'),
+      closeConfigBtn: document.getElementById('close-config-btn'),
+      configPanel: document.getElementById('config-panel'),
+      apiUrlInput: document.getElementById('api-url'),
+      pollIntervalInput: document.getElementById('poll-interval'),
+      saveConfigBtn: document.getElementById('save-config-btn'),
+
+      confirmModal: document.getElementById('confirm-modal'),
+      modalTitle: document.getElementById('modal-title'),
+      modalBody: document.getElementById('modal-body'),
+      modalIcon: document.getElementById('modal-icon'),
+      modalConfirm: document.getElementById('modal-confirm'),
+      modalCancel: document.getElementById('modal-cancel'),
+      
+      closeWindowBtn: document.getElementById('close-window-btn'),
+      minimizeWindowBtn: document.getElementById('minimize-window-btn'),
+      hideWindowBtn: document.getElementById('hide-window-btn'),
+      btnHide: document.getElementById('btn-hide'),
+
+      scannerStatusBadge: document.getElementById('scanner-status-badge'),
+      btnScannerDetail: document.getElementById('btn-scanner-detail'),
+      scannerModal: document.getElementById('scanner-modal'),
+      scannerModalClose: document.getElementById('scanner-modal-close'),
+      scannerDevicesList: document.getElementById('scanner-devices-list'),
+      scannerErrorsSection: document.getElementById('scanner-errors-section'),
+      scannerErrorsList: document.getElementById('scanner-errors-list')
+    };
+
+    // Window controls
+    elements.closeWindowBtn.addEventListener('click', () => {
+      window.close();
+    });
+
+    if (elements.minimizeWindowBtn) {
+      elements.minimizeWindowBtn.addEventListener('click', () => {
+        if (ipcRenderer) ipcRenderer.send('minimize-app');
+      });
+    }
+
+    if (elements.hideWindowBtn) {
+      elements.hideWindowBtn.addEventListener('click', () => {
+        if (ipcRenderer) ipcRenderer.send('hide-app');
+      });
+    }
+
+    if (elements.btnHide) {
+      elements.btnHide.addEventListener('click', () => {
+        if (ipcRenderer) ipcRenderer.send('hide-app');
+      });
+    }
+
+    // Barcode scanner listener and details modal
+    let lastScannerData = null;
+
+    if (elements.btnScannerDetail) {
+      elements.btnScannerDetail.addEventListener('click', () => {
+        // Populate modal with last scanner data
+        if (lastScannerData) {
+          // Render devices
+          if (lastScannerData.devices && lastScannerData.devices.length > 0) {
+            elements.scannerDevicesList.innerHTML = lastScannerData.devices.map(d => `
+              <div style="display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 5px; margin-bottom: 5px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-weight: 600; color: #f3f4f6; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${d.FriendlyName || 'Dispositivo HID'}</span>
+                  <span style="font-size: 0.62rem; font-weight: 700; color: ${d.Status === 'OK' ? '#10b981' : '#ef4444'}; background: ${d.Status === 'OK' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}; padding: 1px 4px; border-radius: 3px;">
+                    ${d.Status || 'Unknown'}
+                  </span>
+                </div>
+                <div style="font-size: 0.6rem; color: #9ca3af; font-family: monospace; word-break: break-all;">
+                  ID: ${d.InstanceId || 'N/A'}
+                </div>
+              </div>
+            `).join('');
+          } else {
+            elements.scannerDevicesList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;">No se encontraron dispositivos HID/Teclados presentes.</div>';
+          }
+
+          // Render errors
+          if (lastScannerData.errors && lastScannerData.errors.length > 0) {
+            elements.scannerErrorsSection.style.display = 'block';
+            elements.scannerErrorsList.innerHTML = lastScannerData.errors.map(d => `
+              <div style="margin-bottom: 4px; display: flex; flex-direction: column; gap: 1px;">
+                <div style="font-weight: 500;">⚠️ ${d.FriendlyName || 'Dispositivo con problema'}</div>
+                <div style="font-size: 0.62rem; font-family: monospace; opacity: 0.85;">Estado: ${d.Status} (ID: ${d.InstanceId})</div>
+              </div>
+            `).join('');
+          } else {
+            elements.scannerErrorsSection.style.display = 'none';
+            elements.scannerErrorsList.innerHTML = '';
+          }
+        } else {
+          elements.scannerDevicesList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;">Cargando datos de diagnóstico...</div>';
+          elements.scannerErrorsSection.style.display = 'none';
+        }
+        elements.scannerModal.classList.add('active');
+      });
+    }
+
+    if (elements.scannerModalClose) {
+      elements.scannerModalClose.addEventListener('click', () => {
+        elements.scannerModal.classList.remove('active');
+      });
+    }
+
+    if (ipcRenderer) {
+      ipcRenderer.on('get-scanner-status-response', (event, result) => {
+        if (result.success) {
+          lastScannerData = result;
+          if (result.connected) {
+            elements.scannerStatusBadge.innerText = 'CONECTADO';
+            elements.scannerStatusBadge.style.color = '#10b981';
+            elements.scannerStatusBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+          } else {
+            elements.scannerStatusBadge.innerText = 'NO DETECTADO';
+            elements.scannerStatusBadge.style.color = 'var(--text-muted)';
+            elements.scannerStatusBadge.style.background = 'rgba(255, 255, 255, 0.05)';
+          }
+        } else {
+          console.error('get-scanner-status-response error:', result.error);
+          elements.scannerStatusBadge.innerText = 'ERROR';
+          elements.scannerStatusBadge.style.color = '#ef4444';
+          elements.scannerStatusBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+        }
+      });
+    }
+
+    // Helper functions
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 GB';
+      return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+    }
+
+    function formatUptime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      return `${h}h ${m}m`;
+    }
+
+    // Views transition
+    function showView(viewName) {
+      if (viewName === 'login') {
+        elements.viewLogin.classList.remove('hidden');
+        elements.viewDashboard.classList.add('hidden');
+      } else {
+        elements.viewLogin.classList.add('hidden');
+        elements.viewDashboard.classList.remove('hidden');
+      }
+    }
+
+    // Login Action
+    async function handleLogin() {
+      const username = elements.loginUsername.value.trim();
+      const password = elements.loginPassword.value;
+      
+      if (!username || !password) {
+        elements.loginError.innerText = 'Introduce usuario y contraseña.';
+        return;
+      }
+
+      elements.loginError.innerText = '';
+      const url = `${state.apiUrl}/api/auth/admin-login`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        if (response.ok && data.success) {
+          state.token = data.token || '';
+          localStorage.setItem('rexermi_admin_token', state.token);
+          showView('dashboard');
+          startPolling();
+        } else {
+          elements.loginError.innerText = data.error || 'Credenciales inválidas.';
+        }
+      } catch (err) {
+        elements.loginError.innerText = 'Error al conectar con el servidor.';
+      }
+    }
+
+    elements.btnSubmitLogin.addEventListener('click', handleLogin);
+    elements.loginPassword.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') handleLogin();
+    });
+
+    // Fetch server status
+    async function fetchStatus() {
+      if (ipcRenderer) ipcRenderer.send('get-scanner-status');
+      const url = `${state.apiUrl}/api/admin/server-control/status`;
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (state.token) {
+          headers['Authorization'] = `Bearer ${state.token}`;
+        }
+        
+        const response = await fetch(url, { 
+          headers,
+          credentials: 'include' 
+        });
+        if (!response.ok) {
+          if (response.status === 401) {
+            showView('login');
+            if (state.pollingTimer) clearInterval(state.pollingTimer);
+            return;
+          }
+          throw new Error(`Error HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        updateUI(data);
+      } catch (err) {
+        showOffline(err.message);
+      }
+    }
+
+    function updateUI(data) {
+      showView('dashboard');
+      elements.statusDot.className = 'pulse-dot';
+      elements.statusText.innerText = 'CONECTADO';
+      elements.statusText.style.color = 'var(--text-main)';
+
+      elements.cpuText.innerText = `${data.hardware.cpu}%`;
+      elements.cpuBar.style.width = `${data.hardware.cpu}%`;
+
+      const usedMemStr = formatBytes(data.hardware.memory.used);
+      const totalMemStr = formatBytes(data.hardware.memory.total);
+      elements.ramText.innerText = `${usedMemStr} / ${totalMemStr}`;
+      elements.ramBar.style.width = `${data.hardware.memory.usagePercentage}%`;
+
+      // Database
+      if (data.database.connected) {
+        elements.dbStatusBar.className = 'db-status-bar';
+        elements.dbModeBadge.innerText = data.database.mode;
+        elements.dbModeBadge.className = 'db-badge';
+        elements.dbModeBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+        elements.dbModeBadge.style.color = 'var(--accent-success)';
+      } else {
+        elements.dbStatusBar.className = 'db-status-bar error';
+        elements.dbModeBadge.innerText = 'OFFLINE';
+        elements.dbModeBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+        elements.dbModeBadge.style.color = 'var(--accent-danger)';
+      }
+
+      // Alerts
+      elements.ordersCount.innerText = data.notifications.pendingOrders;
+      if (data.notifications.pendingOrders > 0) {
+        elements.ordersCount.className = 'notification-count highlight-red';
+        elements.ordersCard.classList.add('has-alerts');
+      } else {
+        elements.ordersCount.className = 'notification-count';
+        elements.ordersCard.classList.remove('has-alerts');
+      }
+
+      elements.stockCount.innerText = data.notifications.lowStockAlerts;
+      if (data.notifications.lowStockAlerts > 0) {
+        elements.stockCount.className = 'notification-count highlight-red';
+        elements.stockCard.classList.add('has-alerts');
+      } else {
+        elements.stockCount.className = 'notification-count';
+        elements.stockCard.classList.remove('has-alerts');
+      }
+
+      // Footer
+      elements.widgetFooter.innerText = `PLATFORM: ${data.hardware.platform.toUpperCase()} | UPTIME: ${formatUptime(data.hardware.uptime)}`;
+    }
+
+    function showOffline(message) {
+      elements.statusDot.className = 'pulse-dot offline';
+      elements.statusText.innerText = 'DESCONECTADO';
+      elements.statusText.style.color = 'var(--accent-danger)';
+      elements.widgetFooter.innerText = message || 'Sin conexión';
+
+      elements.cpuBar.style.width = '0%';
+      elements.cpuText.innerText = '0%';
+      elements.ramBar.style.width = '0%';
+      elements.ramText.innerText = '0 GB / 0 GB';
+    }
+
+    async function executeAction(action) {
+      const url = `${state.apiUrl}/api/admin/server-control/action`;
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (state.token) {
+          headers['Authorization'] = `Bearer ${state.token}`;
+        }
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({ action })
+        });
+        const resData = await response.json();
+        alert(response.ok ? `Éxito: ${resData.message}` : `Error: ${resData.error}`);
+        fetchStatus();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    function triggerConfirmModal(action, title, body) {
+      state.pendingAction = action;
+      elements.modalTitle.innerText = title;
+      elements.modalBody.innerText = body;
+      elements.confirmModal.classList.add('active');
+    }
+
+    elements.modalConfirm.addEventListener('click', () => {
+      if (state.pendingAction) executeAction(state.pendingAction);
+      elements.confirmModal.classList.remove('active');
+    });
+
+    elements.modalCancel.addEventListener('click', () => {
+      elements.confirmModal.classList.remove('active');
+    });
+
+    // Configuration
+    function initConfig() {
+      elements.apiUrlInput.value = state.apiUrl;
+      elements.pollIntervalInput.value = state.pollInterval;
+    }
+
+    elements.openConfigBtn.addEventListener('click', () => {
+      initConfig();
+      elements.configPanel.classList.add('active');
+    });
+
+    elements.loginConfigBtn.addEventListener('click', () => {
+      initConfig();
+      elements.configPanel.classList.add('active');
+    });
+
+    elements.closeConfigBtn.addEventListener('click', () => {
+      elements.configPanel.classList.remove('active');
+    });
+
+    elements.saveConfigBtn.addEventListener('click', () => {
+      const url = elements.apiUrlInput.value.trim().replace(/\/$/, '');
+      const interval = parseInt(elements.pollIntervalInput.value, 10) || 5;
+
+      state.apiUrl = url;
+      state.pollInterval = interval;
+
+      localStorage.setItem('rexermi_api_url', url);
+      localStorage.setItem('rexermi_poll_interval', interval.toString());
+
+      elements.configPanel.classList.remove('active');
+      startPolling();
+    });
+
+    elements.btnPing.addEventListener('click', () => {
+      // If we are offline, clicking the button triggers start-server via IPC
+      if (elements.statusDot.classList.contains('offline')) {
+        if (ipcRenderer) {
+          elements.statusText.innerText = 'INICIANDO...';
+          elements.statusText.style.color = 'var(--accent-warning)';
+          elements.widgetFooter.innerText = 'Lanzando script de inicio del servidor...';
+          elements.btnPing.disabled = true;
+          elements.btnPing.innerText = '⏳ Levantando Servidor...';
+
+          ipcRenderer.send('start-server');
+        } else {
+          // Fallback to simple status fetch if not running under Electron
+          fetchStatus();
+        }
+      } else {
+        fetchStatus();
+      }
+    });
+
+    // Handle IPC start server response
+    if (ipcRenderer) {
+      ipcRenderer.on('start-server-response', (event, response) => {
+        elements.btnPing.disabled = false;
+        elements.btnPing.innerText = '⚡ Encender / Activar';
+        if (response.success) {
+          elements.widgetFooter.innerText = 'Comando enviado. Conectando...';
+          // Polling rapidly (every 1 second) to check when the server comes online
+          let startupAttempts = 0;
+          const startupTimer = setInterval(async () => {
+            startupAttempts++;
+            const url = `${state.apiUrl}/api/admin/server-control/status`;
+            try {
+              const headers = { 'Content-Type': 'application/json' };
+              if (state.token) {
+                headers['Authorization'] = `Bearer ${state.token}`;
+              }
+              const res = await fetch(url, { headers, credentials: 'include' });
+              if (res.ok) {
+                clearInterval(startupTimer);
+                const data = await res.json();
+                updateUI(data);
+                startPolling(); // Restore normal polling interval
+              }
+            } catch (err) {
+              if (startupAttempts > 20) { // Limit attempts to 20 seconds
+                clearInterval(startupTimer);
+                elements.widgetFooter.innerText = 'El servidor tarda en responder. Revisa la consola.';
+              }
+            }
+          }, 1000);
+        } else {
+          alert(`Error al iniciar el servidor: ${response.error}`);
+          fetchStatus();
+        }
+      });
+    }
+
+    elements.btnRestart.addEventListener('click', () => {
+      triggerConfirmModal('restart', 'Reiniciar Servidor', '¿Confirmas el reinicio del servidor físico? Todos los servicios se desconectarán temporalmente.');
+    });
+
+    elements.btnShutdown.addEventListener('click', () => {
+      triggerConfirmModal('shutdown', 'Apagar Servidor', '¿Confirmas el apagado definitivo del hardware del servidor?');
+    });
+
+    elements.btnRebootApp.addEventListener('click', () => {
+      triggerConfirmModal('reboot_app', 'Reiniciar Proceso App', '¿Confirmas el reinicio del proceso de Next.js?');
+    });
+
+    function startPolling() {
+      if (state.pollingTimer) clearInterval(state.pollingTimer);
+      fetchStatus();
+      state.pollingTimer = setInterval(fetchStatus, state.pollInterval * 1000);
+    }
+
+    // Start App
+    startPolling();
+  </script>
+</body>
+</html>
